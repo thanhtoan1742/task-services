@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package Task.Api;
 
+option go_package = "github.com/thanhtoan1742/task-services/api";
+
 
 service TaskService {
     rpc GetTasks(GetTaskRequest) returns (TaskList) {}
