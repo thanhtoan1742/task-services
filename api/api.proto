@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package Task.Api;
+
+
+service TaskService {
+    rpc GetTasks(GetTaskRequest) returns (TaskList) {}
+}
+
+message GetTaskRequest {
+}
+
+message TaskList {
+    repeated Task tasks = 1;
+}
+
+message Task {
+    string name = 1;
+    string description = 2;
+    string dueTime = 3;
+    bool finished = 4;
+    repeated Task subtasks = 5;
+}
