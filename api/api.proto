@@ -6,10 +6,16 @@ option go_package = "github.com/thanhtoan1742/task-services/api";
 
 
 service TaskService {
-    rpc GetTasks(GetTaskRequest) returns (TaskList) {}
+    rpc CheckHealth(EmptyRequest) returns (ServiceHealth) {}
+    rpc GetTasks(EmptyRequest) returns (TaskList) {}
 }
 
-message GetTaskRequest {
+message EmptyRequest {
+}
+
+message ServiceHealth {
+    int32 status = 1;
+    string description = 2;
 }
 
 message TaskList {
