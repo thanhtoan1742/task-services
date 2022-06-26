@@ -8,6 +8,9 @@ gen-protobuf:
 mod:
 	go mod tidy
 
+run-server:
+	go run cmd/server/main.go
+
 test:
 	echo "no test"
 
