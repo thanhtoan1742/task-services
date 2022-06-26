@@ -11,6 +11,12 @@ mod:
 run-server:
 	go run cmd/server/main.go
 
+run-client:
+	go run cmd/client/main.go
+
+run-whatever:
+	go run cmd/whatever/main.go
+
 test:
 	echo "no test"
 

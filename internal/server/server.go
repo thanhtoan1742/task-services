@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/thanhtoan1742/task-services/api"
+	"github.com/thanhtoan1742/task-services/internal/storage"
 )
 
 type Server struct {
@@ -18,14 +19,17 @@ func (s *Server) CheckHealth(ctx context.Context, r *api.EmptyRequest) (*api.Ser
 }
 
 func (s *Server) GetTasks(ctx context.Context, r *api.EmptyRequest) (*api.TaskList, error) {
+	tasks, err := storage.Read()
+	if err != nil {
+		return nil, err
+	}
+
+	tps := []*api.Task{}
+	for i := 0; i < len(tasks); i++ {
+		tps = append(tps, &tasks[i])
+	}
+
 	return &api.TaskList{
-		Tasks: []*api.Task{
-			{
-				Name:        "Task 1",
-				Description: "Description 1",
-				DueTime:     "none",
-				Finished:    false,
-			},
-		},
+		Tasks: tps,
 	}, nil
 }
