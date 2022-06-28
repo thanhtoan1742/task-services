@@ -7,3 +7,9 @@ What i want to do with the app:
 - Have a client app that interact with the server. CLI at first, GUI latter.
 
 The app will follow the common project structure.
+
+
+## Add
+- gateway
+- validation
+- protobuf value

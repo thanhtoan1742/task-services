@@ -37,3 +37,12 @@ func Write(tasks []api.Task) error {
 	}
 	return nil
 }
+
+func Append(task api.Task) error {
+	tasks, err := Read()
+	if err != nil {
+		return err
+	}
+	tasks = append(tasks, task)
+	return Write(tasks)
+}

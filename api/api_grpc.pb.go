@@ -22,8 +22,11 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskServiceClient interface {
-	CheckHealth(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ServiceHealth, error)
+	CheckHealth(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*Status, error)
 	GetTasks(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*TaskList, error)
+	GetTaskStream(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (TaskService_GetTaskStreamClient, error)
+	AddTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*Status, error)
+	AddTaskStream(ctx context.Context, opts ...grpc.CallOption) (TaskService_AddTaskStreamClient, error)
 }
 
 type taskServiceClient struct {
@@ -34,8 +37,8 @@ func NewTaskServiceClient(cc grpc.ClientConnInterface) TaskServiceClient {
 	return &taskServiceClient{cc}
 }
 
-func (c *taskServiceClient) CheckHealth(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*ServiceHealth, error) {
-	out := new(ServiceHealth)
+func (c *taskServiceClient) CheckHealth(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*Status, error) {
+	out := new(Status)
 	err := c.cc.Invoke(ctx, "/Task.Api.TaskService/CheckHealth", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -52,12 +55,87 @@ func (c *taskServiceClient) GetTasks(ctx context.Context, in *EmptyRequest, opts
 	return out, nil
 }
 
+func (c *taskServiceClient) GetTaskStream(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (TaskService_GetTaskStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &TaskService_ServiceDesc.Streams[0], "/Task.Api.TaskService/GetTaskStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &taskServiceGetTaskStreamClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type TaskService_GetTaskStreamClient interface {
+	Recv() (*Task, error)
+	grpc.ClientStream
+}
+
+type taskServiceGetTaskStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *taskServiceGetTaskStreamClient) Recv() (*Task, error) {
+	m := new(Task)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *taskServiceClient) AddTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*Status, error) {
+	out := new(Status)
+	err := c.cc.Invoke(ctx, "/Task.Api.TaskService/AddTask", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskServiceClient) AddTaskStream(ctx context.Context, opts ...grpc.CallOption) (TaskService_AddTaskStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &TaskService_ServiceDesc.Streams[1], "/Task.Api.TaskService/AddTaskStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &taskServiceAddTaskStreamClient{stream}
+	return x, nil
+}
+
+type TaskService_AddTaskStreamClient interface {
+	Send(*Task) error
+	Recv() (*Status, error)
+	grpc.ClientStream
+}
+
+type taskServiceAddTaskStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *taskServiceAddTaskStreamClient) Send(m *Task) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *taskServiceAddTaskStreamClient) Recv() (*Status, error) {
+	m := new(Status)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // TaskServiceServer is the server API for TaskService service.
 // All implementations must embed UnimplementedTaskServiceServer
 // for forward compatibility
 type TaskServiceServer interface {
-	CheckHealth(context.Context, *EmptyRequest) (*ServiceHealth, error)
+	CheckHealth(context.Context, *EmptyRequest) (*Status, error)
 	GetTasks(context.Context, *EmptyRequest) (*TaskList, error)
+	GetTaskStream(*EmptyRequest, TaskService_GetTaskStreamServer) error
+	AddTask(context.Context, *Task) (*Status, error)
+	AddTaskStream(TaskService_AddTaskStreamServer) error
 	mustEmbedUnimplementedTaskServiceServer()
 }
 
@@ -65,11 +143,20 @@ type TaskServiceServer interface {
 type UnimplementedTaskServiceServer struct {
 }
 
-func (UnimplementedTaskServiceServer) CheckHealth(context.Context, *EmptyRequest) (*ServiceHealth, error) {
+func (UnimplementedTaskServiceServer) CheckHealth(context.Context, *EmptyRequest) (*Status, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckHealth not implemented")
 }
 func (UnimplementedTaskServiceServer) GetTasks(context.Context, *EmptyRequest) (*TaskList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTasks not implemented")
+}
+func (UnimplementedTaskServiceServer) GetTaskStream(*EmptyRequest, TaskService_GetTaskStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetTaskStream not implemented")
+}
+func (UnimplementedTaskServiceServer) AddTask(context.Context, *Task) (*Status, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddTask not implemented")
+}
+func (UnimplementedTaskServiceServer) AddTaskStream(TaskService_AddTaskStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method AddTaskStream not implemented")
 }
 func (UnimplementedTaskServiceServer) mustEmbedUnimplementedTaskServiceServer() {}
 
@@ -120,6 +207,71 @@ func _TaskService_GetTasks_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TaskService_GetTaskStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(EmptyRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(TaskServiceServer).GetTaskStream(m, &taskServiceGetTaskStreamServer{stream})
+}
+
+type TaskService_GetTaskStreamServer interface {
+	Send(*Task) error
+	grpc.ServerStream
+}
+
+type taskServiceGetTaskStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *taskServiceGetTaskStreamServer) Send(m *Task) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _TaskService_AddTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Task)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).AddTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Task.Api.TaskService/AddTask",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).AddTask(ctx, req.(*Task))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskService_AddTaskStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(TaskServiceServer).AddTaskStream(&taskServiceAddTaskStreamServer{stream})
+}
+
+type TaskService_AddTaskStreamServer interface {
+	Send(*Status) error
+	Recv() (*Task, error)
+	grpc.ServerStream
+}
+
+type taskServiceAddTaskStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *taskServiceAddTaskStreamServer) Send(m *Status) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *taskServiceAddTaskStreamServer) Recv() (*Task, error) {
+	m := new(Task)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // TaskService_ServiceDesc is the grpc.ServiceDesc for TaskService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -135,7 +287,23 @@ var TaskService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetTasks",
 			Handler:    _TaskService_GetTasks_Handler,
 		},
+		{
+			MethodName: "AddTask",
+			Handler:    _TaskService_AddTask_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetTaskStream",
+			Handler:       _TaskService_GetTaskStream_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "AddTaskStream",
+			Handler:       _TaskService_AddTaskStream_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "api.proto",
 }
